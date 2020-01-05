@@ -10,8 +10,8 @@ function usage()
 
    arguments:
      -h, --help           show this help message and exit
-     -c                   include containers with the following name (default regex: .*)
-     -v                   include volumes with the following name (default regex: .*)
+     -c                   exclude containers with the following name (regex)
+     -v                   exclude volumes with the following name (regex)
      -b                   backup location of the docker volumes
      -d                   delete all .tar files older than d in the backup folder
      --dry-run            do a dry run, dont change any files
@@ -38,8 +38,8 @@ HEREDOC
 exit 1
 }
 
-CONTAINER_REGEX=".*"
-VOLUME_REGEX=".*"
+CONTAINER_REGEX="*"
+VOLUME_REGEX="*"
 BASEFOLDER=
 DRYRUN=FALSE
 DELETEDAYS=
@@ -98,14 +98,17 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
     CONTAINER=$(echo "$LINE" | cut -d';' -f1) # container name
     VOLUMES=$(echo "$LINE" | cut -d';' -f2) # comma separated list of volumes
 
-    if [[ "$CONTAINER" =~ $CONTAINER_REGEX ]]
+    if [[ ! "$CONTAINER" =~ $CONTAINER_REGEX ]]
     then
+
+    
+        echo "[-] Container: $CONTAINER"
 
         # loop over all volumes
         for VOLUME in $(echo "$VOLUMES" | sed "s/,/ /g")
         do
 
-            if [[ "$VOLUME" =~ $VOLUME_REGEX ]]
+            if [[ ! "$VOLUME" =~ $VOLUME_REGEX ]]
             then
 
                 FOLDER="$BASEFOLDER"/"$CONTAINER"
@@ -115,10 +118,8 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
                 # replace "/" with underscores so that we don't get so many subfolders in Backup folder
                 VOLUME_WITH_UNDERSCORE=${VOLUME//\//_}
 
-                echo "Container: $CONTAINER"
-                echo "  Volume (Path or ID): $VOLUME"
-                echo "  Timestamp: $DATE"
-                echo "  Backup file: $FOLDER/$VOLUME_WITH_UNDERSCORE.$DATE.tar"
+                echo "[-]   Volume (Path or ID): $VOLUME"
+                echo "[-]   Backup file: $FOLDER/$VOLUME_WITH_UNDERSCORE.$DATE.tar"
 
                 if [[ $DRYRUN == "FALSE" ]]
                 then
@@ -128,9 +129,15 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
                     # do the actual backup. Based on: https://docs.docker.com/storage/volumes/#backup-a-container
                     docker run --rm -v "$VOLUME":/volume:ro -v "$FOLDER":/backup busybox tar -czf /backup/"$VOLUME_WITH_UNDERSCORE"."$DATE".tar -C /volume .
                 fi
+            else
+                echo "[X]   Volume $VOLUME excluded because of volume regex: $VOLUME_REGEX"
             fi
         done
+    else
+        echo "[X] Container $CONTAINER excluded because of container regex: $CONTAINER_REGEX"
     fi
+
+    echo ""
 done
 
 # delete old folders
