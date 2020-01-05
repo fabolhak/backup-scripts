@@ -145,7 +145,7 @@ if [[ $DRYRUN == "FALSE" ]]
 then
     find "$BASEFOLDER" -name "*.tar" -type f -mtime +$DELETEDAYS -exec rm -f {} \;
 else
-    find "$BASEFOLDER" -name "*.tar" -type f -mtime +$DELETEDAYS -exec echo "Delete: " {} \;
+    find "$BASEFOLDER" -name "*.tar" -type f -mtime +$DELETEDAYS -exec echo "[-] Delete: " {} \;
 fi
 
 exit 0
