@@ -6,20 +6,19 @@ function usage()
 {
    cat << HEREDOC
 
-   Usage: backup_all_docker_volumes.sh [--dry-run] [-r <regex>] -b <backupfolder> -d <days>
+   Usage: backup_all_docker_volumes.sh [--dry-run] [-c <container>] [-v <volume>] -b <backupfolder> -d <days>
 
    arguments:
      -h, --help           show this help message and exit
-     -r                   regex of which containers should be included in the backup (default: .*)
+     -c                   include containers with the following name (default regex: .*)
+     -v                   include volumes with the following name (default regex: .*)
      -b                   backup location of the docker volumes
-     --dry-run            do a dry run, dont change any files
      -d                   delete all .tar files older than d in the backup folder
+     --dry-run            do a dry run, dont change any files
 
    Backup all Docker volumes for containers which are currently running.
    The volumes will be attached readonly to an temporary busybox container
    which archives all contents in a .tar file in the backup folder.
-
-   All volume names containing a "/" are ommited (e.g. /var/run/docker.sock).
 
    Additional it deletes older .tar files based on their creation date.
 
@@ -39,7 +38,8 @@ HEREDOC
 exit 1
 }
 
-REGEX=".*"
+CONTAINER_REGEX=".*"
+VOLUME_REGEX=".*"
 BASEFOLDER=
 DRYRUN=FALSE
 DELETEDAYS=
@@ -64,8 +64,13 @@ case $key in
     shift # past argument
     shift # past value
     ;;
-    -r)
-    REGEX="$2"
+    -c)
+    CONTAINER_REGEX="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -v)
+    VOLUME_REGEX="$2"
     shift # past argument
     shift # past value
     ;;
@@ -93,15 +98,14 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
     CONTAINER=$(echo "$LINE" | cut -d';' -f1) # container name
     VOLUMES=$(echo "$LINE" | cut -d';' -f2) # comma separated list of volumes
 
-    if [[ "$CONTAINER" =~ $REGEX ]]
+    if [[ "$CONTAINER" =~ $CONTAINER_REGEX ]]
     then
 
         # loop over all volumes
         for VOLUME in $(echo "$VOLUMES" | sed "s/,/ /g")
         do
 
-            # avoid non valid volumes like "/var/run/docker.sock"
-            if [[ ! "$VOLUME" =~ "/" ]]
+            if [[ "$VOLUME" =~ $VOLUME_REGEX ]]
             then
 
                 FOLDER="$BASEFOLDER"/"$CONTAINER"
