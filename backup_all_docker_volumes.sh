@@ -110,16 +110,22 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
 
                 FOLDER="$BASEFOLDER"/"$CONTAINER"
 
-                mkdir "$FOLDER" -p
-
                 DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
-                echo "Backup $VOLUME of $CONTAINER to $FOLDER at $DATE"
+                VOLUME_WITH_UNDERSCORE=${VOLUME//\//_}
+
+                echo "Container: $CONTAINER"
+                echo "  Volume (Path or ID): $VOLUME"
+                echo "  Timestamp: $DATE"
+                echo "  Backup file: $FOLDER/$VOLUME_WITH_UNDERSCORE.$DATE.tar"
 
                 if [[ $DRYRUN == "FALSE" ]]
                 then
+                    # create the folder
+                    mkdir "$FOLDER" -p
+
                     # do the actual backup. Based on: https://docs.docker.com/storage/volumes/#backup-a-container
-                    docker run --rm -v "$VOLUME":/volume:ro -v "$FOLDER":/backup busybox tar -czf /backup/"$VOLUME"_"$DATE".tar -C /volume .
+                    docker run --rm -v "$VOLUME":/volume:ro -v "$FOLDER":/backup busybox tar -czf /backup/"$VOLUME_WITH_UNDERSCORE"."$DATE".tar -C /volume .
                 fi
             fi
         done
