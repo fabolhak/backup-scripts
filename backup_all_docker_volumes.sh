@@ -112,6 +112,7 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
 
                 DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
+                # replace "/" with underscores so that we don't get so many subfolders in Backup folder
                 VOLUME_WITH_UNDERSCORE=${VOLUME//\//_}
 
                 echo "Container: $CONTAINER"
