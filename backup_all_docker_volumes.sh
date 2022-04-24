@@ -127,7 +127,7 @@ docker container ls --format "{{.Names}};{{.Mounts}}" --no-trunc | while read LI
                     mkdir "$FOLDER" -p
 
                     # do the actual backup. Based on: https://docs.docker.com/storage/volumes/#backup-a-container
-                    docker run --rm -v "$VOLUME":/volume:ro -v "$FOLDER":/backup busybox tar -czf /backup/"$VOLUME_WITH_UNDERSCORE"."$DATE".tar -C /volume .
+                    docker run --rm -v "$VOLUME":/volume:ro -v "$FOLDER":/backup busybox tar -czf /backup/"$VOLUME_WITH_UNDERSCORE"."$DATE".tar /volume &>/dev/null
                 fi
             else
                 echo "[X]   Volume $VOLUME excluded because of volume regex: $VOLUME_REGEX"
